@@ -83,7 +83,7 @@ def create_and_save(filename=FILENAME):
     print('处理完成')
 
 
-def load(filename=FILENAME):
+def load(filename=FILENAME, batch_size=32, num_threads=2):
     """
 
     :param filename:
@@ -112,27 +112,22 @@ def load(filename=FILENAME):
     )
 
     # tf.decode_raw可以将字符串解析成图像对应的像素数组
-    images = tf.decode_raw(features['image_raw'], tf.uint8)
-    labels = tf.decode_raw(features['label_raw'], tf.uint8)
+    images = tf.reshape(tf.decode_raw(features['image_raw'], tf.uint8), PIXELS)
+    labels = tf.reshape(tf.decode_raw(features['label_raw'], tf.uint8), PIXELS)
 
-    sess = tf.Session()
-    # 启动多线程处理输入数据。
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-    # 每次运行可以读取TFRecord文件中的一个样例。当所有样例读取完之后，在此样例中程序
-    # 会在重头读取。
-    xs = []
-    ys = []
-    for i in range(NUM):
-        # 读取一组x和y
-        x, y = sess.run([images, labels])
-        # reshape
-        xs.append(np.reshape(x, PIXELS))
-        ys.append(np.reshape(x, PIXELS))
+    capacity = batch_size * 10
+    min_after_dequeue = batch_size * 2
+    img_batch, label_batch = tf.train.shuffle_batch(
+        [images, labels],
+        batch_size=batch_size,
+        capacity=capacity,
+        min_after_dequeue=min_after_dequeue,
+        num_threads=num_threads
+    )
 
     print('加载完成')
 
-    return xs, ys
+    return img_batch, label_batch
 
 
 if __name__ == '__main__':
