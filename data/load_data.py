@@ -19,7 +19,7 @@ FILENAME = path.join(
         path.realpath(__file__)),
     'dataset.tfrecords')
 NUM = 2200
-PIXELS = (512, 512)
+PIXELS = (512, 512, 3)
 
 
 def _load_data():
@@ -35,11 +35,11 @@ def _load_data():
     for i in range(NUM):
         x_path = path.join(path.dirname(path.realpath(__file__)),
                            'Label/Label' + str(i + 1) + '.png')
-        x = cv2.imread(x_path, cv2.IMREAD_GRAYSCALE)
+        x = cv2.imread(x_path)
         xs.append(x)
         y_path = path.join(path.dirname(path.realpath(
             __file__)), 'Image/IM' + str(i + 1) + '.png')
-        y = cv2.imread(y_path, cv2.IMREAD_GRAYSCALE)
+        y = cv2.imread(y_path)
         ys.append(y)
 
     print('读取完成')
@@ -115,8 +115,8 @@ def load(filename=FILENAME, batch_size=32, num_threads=2):
     images = tf.reshape(tf.decode_raw(features['image_raw'], tf.uint8), PIXELS)
     labels = tf.reshape(tf.decode_raw(features['label_raw'], tf.uint8), PIXELS)
 
-    capacity = batch_size * 10
-    min_after_dequeue = batch_size * 2
+    min_after_dequeue = 1000
+    capacity = min_after_dequeue + 3 * batch_size
     img_batch, label_batch = tf.train.shuffle_batch(
         [images, labels],
         batch_size=batch_size,
