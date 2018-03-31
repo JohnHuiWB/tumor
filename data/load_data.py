@@ -10,10 +10,14 @@
 
 import cv2
 import numpy as np
+from os import path
 import tensorflow as tf
 
 
-FILENAME = './dataset.tfrecords'
+FILENAME = path.join(
+    path.dirname(
+        path.realpath(__file__)),
+    'dataset.tfrecords')
 NUM = 2200
 PIXELS = (512, 512)
 
@@ -29,10 +33,14 @@ def _load_data():
     xs = []
     ys = []
     for i in range(NUM):
-        with cv2.imread('./Label/Label' + str(i + 1) + '.png', cv2.IMREAD_GRAYSCALE) as x:
-            xs.append(x)
-        with cv2.imread('./Image/IM' + str(i + 1) + '.png', cv2.IMREAD_GRAYSCALE) as y:
-            ys.append(y)
+        x_path = path.join(path.dirname(path.realpath(__file__)),
+                           'Label/Label' + str(i + 1) + '.png')
+        x = cv2.imread(x_path, cv2.IMREAD_GRAYSCALE)
+        xs.append(x)
+        y_path = path.join(path.dirname(path.realpath(
+            __file__)), 'Image/IM' + str(i + 1) + '.png')
+        y = cv2.imread(y_path, cv2.IMREAD_GRAYSCALE)
+        ys.append(y)
 
     print('读取完成')
 
