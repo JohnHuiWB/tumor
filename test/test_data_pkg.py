@@ -8,18 +8,20 @@
 # @Contact : huiwenbin199822@gmail.com 
 # @Software : PyCharm
 
-import tensorflow as tf
+
+import tumor.data as data
+import numpy as np
+import cv2
+
+def test_generate_arrays_from_file():
+    x, y = data.generate_arrays_from_file(data.FILENAME, 1).__next__()
+    x *= 255
+    x = x.astype('uint8')
+    x = np.squeeze(x)
+    print(x.shape)
+    im = cv2.imshow('x', x)
+    im.show()
+
 
 if __name__ == '__main__':
-    import tumor.data as data
-    image_batch, label_batch = data.load()
-    with tf.Session() as sess:
-        tf.global_variables_initializer().run()
-        coord = tf.train.Coordinator()  # 创建一个协调器，管理线程
-        # 启动QueueRunner, 此时文件名队列已经进队。
-        threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-
-        image, label = sess.run([image_batch, label_batch])
-        print(image.shape)
-        coord.request_stop()
-        coord.join(threads)
+    test_generate_arrays_from_file()

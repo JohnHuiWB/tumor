@@ -1,87 +1,123 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# @File  : unet.py
+# @File  : Unet.py
 # @Author: JohnHuiWB
 # @Date  : 2018/3/31 0031
 # @Desc  : 
 # @Contact : huiwenbin199822@gmail.com 
 # @Software : PyCharm
+
+from os import path
 from keras import Model, Input
-from keras.layers import Conv2D, merge, UpSampling2D, MaxPooling2D, Dropout
+from keras.callbacks import ModelCheckpoint
+from keras.models import load_model
+from keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose
+from keras.layers.merge import concatenate
 from keras.optimizers import Adam
-from tumor.data.load_data import PIXELS
+from tumor import data
 
 
 class Unet(object):
     def __init__(self):
-        pass
-
-    def train(self):
-        pass
+        self.model_path = path.join(path.dirname(path.realpath(__file__)), 'unet.h5')
+        self.smooth = 1.
 
     def draw_model(self):
         model = self._get_model()
         from keras.utils.vis_utils import plot_model
         # 神经网络可视化
-        plot_model(model, to_file='model.png', show_shapes=True)
+        filename = path.join(path.dirname(path.realpath(__file__)), 'model.png')
+        plot_model(model, to_file=filename, show_shapes=True)
 
-    @staticmethod
-    def _get_model():
-        inputs = Input(PIXELS)
-
-        conv1 = Conv2D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal')(inputs)
-        conv1 = Conv2D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal')(conv1)
+    def _get_model(self):
+        inputs = Input(data.PIXELS)
+        conv1 = Conv2D(32, (3, 3), activation='relu', padding='same')(inputs)
+        conv1 = Conv2D(32, (3, 3), activation='relu', padding='same')(conv1)
         pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
 
-        conv2 = Conv2D(128, 3, activation='relu', padding='same', kernel_initializer='he_normal')(pool1)
-        conv2 = Conv2D(128, 3, activation='relu', padding='same', kernel_initializer='he_normal')(conv2)
+        conv2 = Conv2D(64, (3, 3), activation='relu', padding='same')(pool1)
+        conv2 = Conv2D(64, (3, 3), activation='relu', padding='same')(conv2)
         pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
 
-        conv3 = Conv2D(256, 3, activation='relu', padding='same', kernel_initializer='he_normal')(pool2)
-        conv3 = Conv2D(256, 3, activation='relu', padding='same', kernel_initializer='he_normal')(conv3)
+        conv3 = Conv2D(128, (3, 3), activation='relu', padding='same')(pool2)
+        conv3 = Conv2D(128, (3, 3), activation='relu', padding='same')(conv3)
         pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
 
-        conv4 = Conv2D(512, 3, activation='relu', padding='same', kernel_initializer='he_normal')(pool3)
-        conv4 = Conv2D(512, 3, activation='relu', padding='same', kernel_initializer='he_normal')(conv4)
-        drop4 = Dropout(0.5)(conv4)
-        pool4 = MaxPooling2D(pool_size=(2, 2))(drop4)
+        conv4 = Conv2D(256, (3, 3), activation='relu', padding='same')(pool3)
+        conv4 = Conv2D(256, (3, 3), activation='relu', padding='same')(conv4)
+        pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
 
-        conv5 = Conv2D(1024, 3, activation='relu', padding='same', kernel_initializer='he_normal')(pool4)
-        conv5 = Conv2D(1024, 3, activation='relu', padding='same', kernel_initializer='he_normal')(conv5)
-        drop5 = Dropout(0.5)(conv5)
+        conv5 = Conv2D(512, (3, 3), activation='relu', padding='same')(pool4)
+        conv5 = Conv2D(512, (3, 3), activation='relu', padding='same')(conv5)
 
-        up6 = Conv2D(512, 2, activation='relu', padding='same', kernel_initializer='he_normal')(
-            UpSampling2D(size=(2, 2))(drop5))
-        merge6 = merge([drop4, up6], mode='concat', concat_axis=3)
-        conv6 = Conv2D(512, 3, activation='relu', padding='same', kernel_initializer='he_normal')(merge6)
-        conv6 = Conv2D(512, 3, activation='relu', padding='same', kernel_initializer='he_normal')(conv6)
+        up6 = concatenate([Conv2DTranspose(256, (2, 2), strides=(2, 2), padding='same')(conv5), conv4], axis=3)
+        conv6 = Conv2D(256, (3, 3), activation='relu', padding='same')(up6)
+        conv6 = Conv2D(256, (3, 3), activation='relu', padding='same')(conv6)
 
-        up7 = Conv2D(256, 2, activation='relu', padding='same', kernel_initializer='he_normal')(
-            UpSampling2D(size=(2, 2))(conv6))
-        merge7 = merge([conv3, up7], mode='concat', concat_axis=3)
-        conv7 = Conv2D(256, 3, activation='relu', padding='same', kernel_initializer='he_normal')(merge7)
-        conv7 = Conv2D(256, 3, activation='relu', padding='same', kernel_initializer='he_normal')(conv7)
+        up7 = concatenate([Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(conv6), conv3], axis=3)
+        conv7 = Conv2D(128, (3, 3), activation='relu', padding='same')(up7)
+        conv7 = Conv2D(128, (3, 3), activation='relu', padding='same')(conv7)
 
-        up8 = Conv2D(128, 2, activation='relu', padding='same', kernel_initializer='he_normal')(
-            UpSampling2D(size=(2, 2))(conv7))
-        merge8 = merge([conv2, up8], mode='concat', concat_axis=3)
-        conv8 = Conv2D(128, 3, activation='relu', padding='same', kernel_initializer='he_normal')(merge8)
-        conv8 = Conv2D(128, 3, activation='relu', padding='same', kernel_initializer='he_normal')(conv8)
+        up8 = concatenate([Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(conv7), conv2], axis=3)
+        conv8 = Conv2D(64, (3, 3), activation='relu', padding='same')(up8)
+        conv8 = Conv2D(64, (3, 3), activation='relu', padding='same')(conv8)
 
-        up9 = Conv2D(64, 2, activation='relu', padding='same', kernel_initializer='he_normal')(
-            UpSampling2D(size=(2, 2))(conv8))
-        merge9 = merge([conv1, up9], mode='concat', concat_axis=3)
-        conv9 = Conv2D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal')(merge9)
-        conv9 = Conv2D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal')(conv9)
-        conv9 = Conv2D(2, 3, activation='relu', padding='same', kernel_initializer='he_normal')(conv9)
-        conv10 = Conv2D(1, 1, activation='sigmoid')(conv9)
+        up9 = concatenate([Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='same')(conv8), conv1], axis=3)
+        conv9 = Conv2D(32, (3, 3), activation='relu', padding='same')(up9)
+        conv9 = Conv2D(32, (3, 3), activation='relu', padding='same')(conv9)
 
-        model = Model(input=inputs, output=conv10)
+        conv10 = Conv2D(1, (1, 1), activation='sigmoid')(conv9)
+
+        model = Model(inputs=[inputs], outputs=[conv10])
 
         model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
 
         return model
+
+    def train(self, batch_size=1, samples_per_epoch=10000, epochs=10):
+        model = self._get_model()
+        model_checkpoint = ModelCheckpoint(self.model_path, monitor='loss', save_best_only=True)
+        model.fit_generator(
+            data.generate_arrays_from_file(data.FILENAME, batch_size),
+            samples_per_epoch=samples_per_epoch,
+            epochs=epochs,
+            verbose=1,
+            validation_data=data.generate_arrays_from_file(data.FILENAME_V),
+            validation_steps=20,
+            shuffle=True,
+            callbacks=[model_checkpoint]
+        )
+
+    def continue_train(self, batch_size=1, samples_per_epoch=10000, epochs=10):
+        model = load_model(self.model_path)
+        model_checkpoint = ModelCheckpoint(self.model_path, monitor='loss', save_best_only=True)
+        model.fit_generator(
+            data.generate_arrays_from_file(data.FILENAME, batch_size),
+            samples_per_epoch=samples_per_epoch,
+            epochs=epochs,
+            verbose=1,
+            validation_data=data.generate_arrays_from_file(data.FILENAME_V),
+            validation_steps=20,
+            shuffle=True,
+            callbacks=[model_checkpoint]
+        )
+
+    def _load_model(self, batch_size=1, samples_per_epoch=10000, epochs=10):
+        return load_model(self.model_path)
+
+    def predict(self, x):
+        model = self._load_model()
+        result = model.predict(x, verbose=1)
+        return result
+
+    def eval(self):
+        model = self._load_model()
+        result = model.predict_generator(
+            generator=data.generate_arrays_from_file(data.FILENAME_T),
+            steps=data.NUM_T,
+            verbose=1)
+        return result
 
 
 if __name__ == '__main__':

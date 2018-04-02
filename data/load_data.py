@@ -11,15 +11,32 @@
 import cv2
 import numpy as np
 from os import path
+import os
 import tensorflow as tf
 
+# 将TF的提示等级设置为3
+# - 0：显示所有日志（默认等级）
+# - 1：显示info、warning和error日志
+# - 2：显示warning和error信息
+# - 3：显示error日志信息
+os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 
 FILENAME = path.join(
     path.dirname(
         path.realpath(__file__)),
-    'dataset.tfrecords')
-NUM = 2200
-PIXELS = (512, 512, 3)
+    'train.tfrecords')
+FILENAME_V = path.join(
+    path.dirname(
+        path.realpath(__file__)),
+    'validation.tfrecords')
+FILENAME_T = path.join(
+    path.dirname(
+        path.realpath(__file__)),
+    'test.tfrecords')
+NUM = 1680
+NUM_V = 20
+NUM_T = 500
+PIXELS = (512, 512, 1)
 
 
 def _load_data():
@@ -28,23 +45,56 @@ def _load_data():
     :return:
     """
 
-    print('读取数据中')
+    print('读取训练数据中')
 
     xs = []
     ys = []
     for i in range(NUM):
-        x_path = path.join(path.dirname(path.realpath(__file__)),
-                           'Label/Label' + str(i + 1) + '.png')
-        x = cv2.imread(x_path)
-        xs.append(x)
-        y_path = path.join(path.dirname(path.realpath(
+        x_path = path.join(path.dirname(path.realpath(
             __file__)), 'Image/IM' + str(i + 1) + '.png')
-        y = cv2.imread(y_path)
+        x = cv2.imread(x_path, cv2.IMREAD_GRAYSCALE)
+        xs.append(x)
+        y_path = path.join(path.dirname(path.realpath(__file__)),
+                           'Label/Label' + str(i + 1) + '.png')
+        y = cv2.imread(y_path, cv2.IMREAD_GRAYSCALE)
         ys.append(y)
 
-    print('读取完成')
 
-    return xs, ys
+    print('读取训练数据完成')
+
+    print('读取验证数据中')
+
+    xs_v = []
+    ys_v = []
+    for i in range(NUM_V):
+        x_path_v = path.join(path.dirname(path.realpath(__file__)),
+                           'Image/IM' + str(i+1+NUM) + '.png')
+        x_v = cv2.imread(x_path_v, cv2.IMREAD_GRAYSCALE)
+        xs_v.append(x_v)
+        y_path_v = path.join(path.dirname(path.realpath(
+            __file__)), 'Label/Label' + str(i+1+NUM) + '.png')
+        y_v = cv2.imread(y_path_v, cv2.IMREAD_GRAYSCALE)
+        ys_v.append(y_v)
+
+    print('读取验证数据完成')
+
+    print('读取测试数据中')
+
+    xs_t = []
+    ys_t = []
+    for i in range(NUM_T):
+        x_path_t = path.join(path.dirname(path.realpath(__file__)),
+                           'Image/IM' + str(i+1+NUM+NUM_V) + '.png')
+        x_t = cv2.imread(x_path_t, cv2.IMREAD_GRAYSCALE)
+        xs_t.append(x_t)
+        y_path_t = path.join(path.dirname(path.realpath(
+            __file__)), 'Label/Label' + str(i+1+NUM+NUM_V) + '.png')
+        y_t = cv2.imread(y_path_t, cv2.IMREAD_GRAYSCALE)
+        ys_t.append(y_t)
+
+    print('读取验证数据完成')
+
+    return xs, ys, xs_v, ys_v, xs_t, ys_t
 
 
 def _bytes_feature(value):
@@ -56,13 +106,12 @@ def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
 
-def create_and_save(filename=FILENAME):
+def _create_and_save(xs, ys, filename):
     """
     将数据保存为TFRecord文件
     :return:
     """
     # 创建一个writer来写TFRecord文件
-    xs, ys = _load_data()
     writer = tf.python_io.TFRecordWriter(filename)
 
     print('处理数据中')
@@ -83,15 +132,30 @@ def create_and_save(filename=FILENAME):
     print('处理完成')
 
 
-def load(filename=FILENAME, batch_size=32, num_threads=2):
-    """
+def is_exists():
+    if not path.exists(FILENAME) or not path.exists(FILENAME_V) or not path.exists(FILENAME_T):
+        print('文件不存在')
+        xs, ys, xs_v, ys_v, xs_t, ys_t = _load_data()
+        _create_and_save(xs, ys, FILENAME)
+        _create_and_save(xs_v, ys_v, FILENAME_V)
+        _create_and_save(xs_t, ys_t, FILENAME_T)
 
+
+def _normalize(arr):
+    """
+    进行归一化处理
+    :param arr:
+    :return:
+    """
+    return arr/255.
+
+
+def generate_arrays_from_file(filename, batch_size=1):
+    """
+    迭代器方法generate_arrays_from_file
     :param filename:
     :return:
     """
-
-    print('加载数据中')
-
     # 创建一个reader来读取TFRecord文件中的样例
     reader = tf.TFRecordReader()
     # 创建一个队列来维护输入文件列表，
@@ -115,22 +179,30 @@ def load(filename=FILENAME, batch_size=32, num_threads=2):
     images = tf.reshape(tf.decode_raw(features['image_raw'], tf.uint8), PIXELS)
     labels = tf.reshape(tf.decode_raw(features['label_raw'], tf.uint8), PIXELS)
 
-    min_after_dequeue = 1000
-    capacity = min_after_dequeue + 3 * batch_size
-    img_batch, label_batch = tf.train.shuffle_batch(
-        [images, labels],
-        batch_size=batch_size,
-        capacity=capacity,
-        min_after_dequeue=min_after_dequeue,
-        num_threads=num_threads
-    )
+    sess = tf.Session()
+    # 启动多线程处理输入数据
+    coord = tf.train.Coordinator()
+    threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+    # 每次运行可以读取TFRecord文件中的一个样例
+    while 1:
+        xs, ys = [], []
+        for i in range(batch_size):
+            # 读取一组数据
+            x, y = sess.run([images, labels])
+            xs.append(x)
+            ys.append(y)
+        # 转换为数组，归一化
+        xs, ys = _normalize(np.array(xs, dtype=np.float32)), _normalize(np.array(ys, dtype=np.float32))
+        # 乱序
+        r = np.random.permutation(batch_size)
+        xs = xs[r, :, :, :]
+        ys = ys[r, :, :, :]
+        # ys二值化
+        ys[ys >= 0.5] = 1
+        ys[ys < 0.5] = 0
 
-    print('加载完成')
-
-    return img_batch, label_batch
+        yield (xs, ys)
 
 
 if __name__ == '__main__':
-    # create_and_save()
-    # load()
     pass
