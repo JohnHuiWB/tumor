@@ -33,9 +33,10 @@ FILENAME_T = path.join(
     path.dirname(
         path.realpath(__file__)),
     'test.tfrecords')
-NUM = 1680
-NUM_V = 20
-NUM_T = 500
+NUM_all = 2200
+NUM = 1540
+NUM_V = 220
+NUM_T = 440
 PIXELS = (512, 512, 1)
 
 
@@ -52,7 +53,7 @@ def _load_data():
     xs = []
     ys = []
     notchoice=[7,8,9]
-    for i in range(1,NUM+1):
+    for i in range(1,NUM_all+1):
         last_number=i%10
         if(last_number not in notchoice):
             x_path = ('Image/IM' + str(i) + '.png')
