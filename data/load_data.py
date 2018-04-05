@@ -44,55 +44,88 @@ def _load_data():
     读取data目录中的所有数据，并返回
     :return:
     """
-
-    print('读取训练数据中')
-
-    xs = []
-    ys = []
-    for i in range(NUM):
-        x_path = path.join(path.dirname(path.realpath(
-            __file__)), 'Image/IM' + str(i + 1) + '.png')
-        x = cv2.imread(x_path, cv2.IMREAD_GRAYSCALE)
-        xs.append(x)
-        y_path = path.join(path.dirname(path.realpath(__file__)),
-                           'Label/Label' + str(i + 1) + '.png')
-        y = cv2.imread(y_path, cv2.IMREAD_GRAYSCALE)
-        ys.append(y)
-
-
-    print('读取训练数据完成')
-
-    print('读取验证数据中')
-
+    print('读取数据中')
     xs_v = []
     ys_v = []
-    for i in range(NUM_V):
-        x_path_v = path.join(path.dirname(path.realpath(__file__)),
-                           'Image/IM' + str(i+1+NUM) + '.png')
-        x_v = cv2.imread(x_path_v, cv2.IMREAD_GRAYSCALE)
-        xs_v.append(x_v)
-        y_path_v = path.join(path.dirname(path.realpath(
-            __file__)), 'Label/Label' + str(i+1+NUM) + '.png')
-        y_v = cv2.imread(y_path_v, cv2.IMREAD_GRAYSCALE)
-        ys_v.append(y_v)
-
-    print('读取验证数据完成')
-
-    print('读取测试数据中')
-
     xs_t = []
     ys_t = []
-    for i in range(NUM_T):
-        x_path_t = path.join(path.dirname(path.realpath(__file__)),
-                           'Image/IM' + str(i+1+NUM+NUM_V) + '.png')
-        x_t = cv2.imread(x_path_t, cv2.IMREAD_GRAYSCALE)
-        xs_t.append(x_t)
-        y_path_t = path.join(path.dirname(path.realpath(
-            __file__)), 'Label/Label' + str(i+1+NUM+NUM_V) + '.png')
-        y_t = cv2.imread(y_path_t, cv2.IMREAD_GRAYSCALE)
-        ys_t.append(y_t)
+    xs = []
+    ys = []
+    notchoice=[7,8,9]
+    for i in range(1,NUM+1):
+        last_number=i%10
+        if(last_number not in notchoice):
+            x_path = ('Image/IM' + str(i) + '.png')
+            x = cv2.imread(x_path, cv2.IMREAD_GRAYSCALE)
+            xs.append(x)
+            y_path = ('Label/Label' + str(i) + '.png')
+            y = cv2.imread(y_path, cv2.IMREAD_GRAYSCALE)
+            ys.append(y)
+        elif(last_number == 7):
+            x_path_v = ('Image/IM' + str(i) + '.png')
+            x_v = cv2.imread(x_path_v, cv2.IMREAD_GRAYSCALE)
+            xs_v.append(x_v)
+            y_path_v = ('Label/Label' + str(i) + '.png')
+            y_v = cv2.imread(y_path_v, cv2.IMREAD_GRAYSCALE)
+            ys_v.append(y_v)
+        else:
+            x_path_t = ('Image/IM' + str(i) + '.png')
+            x_t = cv2.imread(x_path_t, cv2.IMREAD_GRAYSCALE)
+            xs_t.append(x_t)
+            y_path_t = ('Label/Label' + str(i) + '.png')
+            y_t = cv2.imread(y_path_t, cv2.IMREAD_GRAYSCALE)
+            ys_t.append(y_t)
 
-    print('读取验证数据完成')
+    print('读取数据完成')
+
+#     print('读取训练数据中')
+
+#     xs = []
+#     ys = []
+#     for i in range(NUM):
+#         x_path = path.join(path.dirname(path.realpath(
+#             __file__)), 'Image/IM' + str(i + 1) + '.png')
+#         x = cv2.imread(x_path, cv2.IMREAD_GRAYSCALE)
+#         xs.append(x)
+#         y_path = path.join(path.dirname(path.realpath(__file__)),
+#                            'Label/Label' + str(i + 1) + '.png')
+#         y = cv2.imread(y_path, cv2.IMREAD_GRAYSCALE)
+#         ys.append(y)
+
+
+#     print('读取训练数据完成')
+
+#     print('读取验证数据中')
+
+#     xs_v = []
+#     ys_v = []
+#     for i in range(NUM_V):
+#         x_path_v = path.join(path.dirname(path.realpath(__file__)),
+#                            'Image/IM' + str(i+1+NUM) + '.png')
+#         x_v = cv2.imread(x_path_v, cv2.IMREAD_GRAYSCALE)
+#         xs_v.append(x_v)
+#         y_path_v = path.join(path.dirname(path.realpath(
+#             __file__)), 'Label/Label' + str(i+1+NUM) + '.png')
+#         y_v = cv2.imread(y_path_v, cv2.IMREAD_GRAYSCALE)
+#         ys_v.append(y_v)
+
+#     print('读取验证数据完成')
+
+#     print('读取测试数据中')
+
+#     xs_t = []
+#     ys_t = []
+#     for i in range(NUM_T):
+#         x_path_t = path.join(path.dirname(path.realpath(__file__)),
+#                            'Image/IM' + str(i+1+NUM+NUM_V) + '.png')
+#         x_t = cv2.imread(x_path_t, cv2.IMREAD_GRAYSCALE)
+#         xs_t.append(x_t)
+#         y_path_t = path.join(path.dirname(path.realpath(
+#             __file__)), 'Label/Label' + str(i+1+NUM+NUM_V) + '.png')
+#         y_t = cv2.imread(y_path_t, cv2.IMREAD_GRAYSCALE)
+#         ys_t.append(y_t)
+
+#     print('读取验证数据完成')
 
     return xs, ys, xs_v, ys_v, xs_t, ys_t
 
