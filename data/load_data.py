@@ -35,6 +35,7 @@ FILENAME_T = path.join(
     path.dirname(
         path.realpath(__file__)),
     'test.tfrecords')
+
 # train:validation:test = 6:1:3
 NUM_ALL = 2200
 NUM_TRAIN_RATIO = 0.6
@@ -51,6 +52,7 @@ def _load_data():
     读取data目录中的所有数据，并返回
     :return:
     """
+
     image_path = path.join(path.dirname(path.realpath(__file__)), 'Image/*')
     label_path = path.join(path.dirname(path.realpath(__file__)), 'Label/*')
 
