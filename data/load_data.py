@@ -8,10 +8,12 @@
 # @Contact : huiwenbin199822@gmail.com
 # @Software : PyCharm
 
+import os
 import cv2
+import glob
+import random
 import numpy as np
 from os import path
-import os
 import tensorflow as tf
 
 # 将TF的提示等级设置为3
@@ -33,9 +35,14 @@ FILENAME_T = path.join(
     path.dirname(
         path.realpath(__file__)),
     'test.tfrecords')
-NUM = 1680
-NUM_V = 20
-NUM_T = 500
+# train:validation:test = 6:1:3
+NUM_ALL = 2200
+NUM_TRAIN_RATIO = 0.6
+NUM_VALIDATION_RATIO = 0.1
+NUM_TEST_RATIO = 0.3
+NUM_TRAIN = int(NUM_ALL * NUM_TRAIN_RATIO)
+NUM_VALIDATION = int(NUM_ALL * NUM_VALIDATION_RATIO)
+NUM_TEST = int(NUM_ALL * NUM_TEST_RATIO)
 PIXELS = (512, 512, 1)
 
 
@@ -44,55 +51,46 @@ def _load_data():
     读取data目录中的所有数据，并返回
     :return:
     """
+    image_path = path.join(path.dirname(path.realpath(__file__)), 'Image/*')
+    label_path = path.join(path.dirname(path.realpath(__file__)), 'Label/*')
 
-    print('读取训练数据中')
+    images = glob.glob(image_path)
+    labels = glob.glob(label_path)
+    paths = [[i, l] for i, l in zip(images, labels)]
+    random.shuffle(paths)
+    paths_train = paths[:NUM_TRAIN]
+    paths_validation = paths[NUM_TRAIN:NUM_TRAIN+NUM_VALIDATION]
+    paths_test = paths[NUM_TRAIN+NUM_VALIDATION:]
 
+    print('Reading train data...')
     xs = []
     ys = []
-    for i in range(NUM):
-        x_path = path.join(path.dirname(path.realpath(
-            __file__)), 'Image/IM' + str(i + 1) + '.png')
+    for x_path, y_path in paths_train:
         x = cv2.imread(x_path, cv2.IMREAD_GRAYSCALE)
         xs.append(x)
-        y_path = path.join(path.dirname(path.realpath(__file__)),
-                           'Label/Label' + str(i + 1) + '.png')
         y = cv2.imread(y_path, cv2.IMREAD_GRAYSCALE)
         ys.append(y)
+    print('Done')
 
-
-    print('读取训练数据完成')
-
-    print('读取验证数据中')
-
+    print('Reading validation data...')
     xs_v = []
     ys_v = []
-    for i in range(NUM_V):
-        x_path_v = path.join(path.dirname(path.realpath(__file__)),
-                           'Image/IM' + str(i+1+NUM) + '.png')
-        x_v = cv2.imread(x_path_v, cv2.IMREAD_GRAYSCALE)
-        xs_v.append(x_v)
-        y_path_v = path.join(path.dirname(path.realpath(
-            __file__)), 'Label/Label' + str(i+1+NUM) + '.png')
-        y_v = cv2.imread(y_path_v, cv2.IMREAD_GRAYSCALE)
-        ys_v.append(y_v)
+    for x_path, y_path in paths_validation:
+        x = cv2.imread(x_path, cv2.IMREAD_GRAYSCALE)
+        xs_v.append(x)
+        y = cv2.imread(y_path, cv2.IMREAD_GRAYSCALE)
+        ys_v.append(y)
+    print('Done')
 
-    print('读取验证数据完成')
-
-    print('读取测试数据中')
-
+    print('Reading test data...')
     xs_t = []
     ys_t = []
-    for i in range(NUM_T):
-        x_path_t = path.join(path.dirname(path.realpath(__file__)),
-                           'Image/IM' + str(i+1+NUM+NUM_V) + '.png')
-        x_t = cv2.imread(x_path_t, cv2.IMREAD_GRAYSCALE)
-        xs_t.append(x_t)
-        y_path_t = path.join(path.dirname(path.realpath(
-            __file__)), 'Label/Label' + str(i+1+NUM+NUM_V) + '.png')
-        y_t = cv2.imread(y_path_t, cv2.IMREAD_GRAYSCALE)
-        ys_t.append(y_t)
-
-    print('读取验证数据完成')
+    for x_path, y_path in paths_test:
+        x = cv2.imread(x_path, cv2.IMREAD_GRAYSCALE)
+        xs_t.append(x)
+        y = cv2.imread(y_path, cv2.IMREAD_GRAYSCALE)
+        ys_t.append(y)
+    print('Done')
 
     return xs, ys, xs_v, ys_v, xs_t, ys_t
 
@@ -114,7 +112,7 @@ def _create_and_save(xs, ys, filename):
     # 创建一个writer来写TFRecord文件
     writer = tf.python_io.TFRecordWriter(filename)
 
-    print('处理数据中')
+    print('Creating data')
 
     for i in range(len(xs)):
         # 将图像矩阵转化成为一个字符串
@@ -129,12 +127,12 @@ def _create_and_save(xs, ys, filename):
         writer.write(example.SerializeToString())
     writer.close()
 
-    print('处理完成')
+    print('Done')
 
 
 def is_exists():
     if not path.exists(FILENAME) or not path.exists(FILENAME_V) or not path.exists(FILENAME_T):
-        print('文件不存在')
+        print('File does not exist.')
         xs, ys, xs_v, ys_v, xs_t, ys_t = _load_data()
         _create_and_save(xs, ys, FILENAME)
         _create_and_save(xs_v, ys_v, FILENAME_V)
@@ -205,4 +203,4 @@ def generate_arrays_from_file(filename, batch_size=1):
 
 
 if __name__ == '__main__':
-    pass
+    is_exists()
