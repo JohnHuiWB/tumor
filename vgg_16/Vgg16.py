@@ -12,9 +12,9 @@ def draw_model(model):
 	plot_model(model, to_file='model.jpg', show_shapes=True)
 
 def VGG_16():
-    img_input = Input(shape=(512,512,1))
+    img_input = Input(shape=(224,224,1))
     # Block 1
-    x = Conv2D(64, (66, 66),strides=(2,2), activation='relu', padding='valid', name='block1_conv1')(img_input)
+    x = Conv2D(64, (3, 3),strides=(2,2), activation='relu', padding='same', name='block1_conv1')(img_input)
     x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool')(x)
 
@@ -49,11 +49,11 @@ def VGG_16():
     model = Model(img_input, x, name='vgg16')
     
     # adam=Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
-    sgd = SGD(decay=1e-4, momentum=0.9)
+    sgd = SGD(decay=1e-3, momentum=0.9)
     model.compile(optimizer=sgd, loss='binary_crossentropy',metrics=['accuracy'])
     return model
 
-def train(model, batch_size=2, samples_per_epoch=100, epochs=3):  #8,2000,5
+def train(model, batch_size=16, samples_per_epoch=500, epochs=16):  #8,2000,5
     # history = History()
     model_checkpoint = ModelCheckpoint(
             'model.h5', monitor='val_loss',verbose=1, save_best_only=True)
@@ -63,7 +63,7 @@ def train(model, batch_size=2, samples_per_epoch=100, epochs=3):  #8,2000,5
         epochs=epochs,
         verbose=1,
         validation_data=generate_arrays_from_file(FILENAME_V),
-        validation_steps=50,
+        validation_steps=100,
         shuffle=True,
         callbacks=[model_checkpoint]
     )
@@ -130,8 +130,8 @@ def test_10(filename):
         break
 
 if __name__ == '__main__':
-	# print(test_10('model.h5'))
+	print(test_10('model.h5'))
 	# print(eval('model.h5'))
 	# test_three('model.h5')
-	train(VGG_16())
+	# train(VGG_16())
 	# continue_train('model.h5')

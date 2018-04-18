@@ -41,6 +41,7 @@ def _load_data():
     ys = []
     for x_path, y in paths_train:
         x = cv2.imread(x_path, cv2.IMREAD_GRAYSCALE)
+        x = cv2.resize(x[100:400],(224,224))
         xs.append(x)
         ys.append(y)
     print('Done')
@@ -50,6 +51,7 @@ def _load_data():
     ys_v = []
     for x_path, y in paths_validation:
         x = cv2.imread(x_path, cv2.IMREAD_GRAYSCALE)
+        x = cv2.resize(x[100:400],(224,224))
         xs_v.append(x)
         ys_v.append(y)
     print('Done')
@@ -59,6 +61,7 @@ def _load_data():
     ys_t = []
     for x_path, y in paths_test:
         x = cv2.imread(x_path, cv2.IMREAD_GRAYSCALE)
+        x = cv2.resize(x[100:400],(224,224))
         xs_t.append(x)
         ys_t.append(y)
     print('Done')
@@ -127,7 +130,7 @@ def generate_arrays_from_file(filename, batch_size=1):
     )
 
     # tf.decode_raw可以将字符串解析成图像对应的像素数组
-    images = tf.reshape(tf.decode_raw(features['image_raw'], tf.uint8), [512,512,1])
+    images = tf.reshape(tf.decode_raw(features['image_raw'], tf.uint8), [224,224,1])
     labels = features['label_raw']
 
     sess = tf.Session()
