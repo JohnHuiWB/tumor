@@ -9,7 +9,7 @@
 # @Software : PyCharm
 
 
-import tumor.data as data
+import tumor.seg_data as data
 import numpy as np
 import cv2
 

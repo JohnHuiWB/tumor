@@ -8,6 +8,8 @@
 # @Contact : huiwenbin199822@gmail.com
 # @Software : PyCharm
 
+import cv2
+import pickle
 from os import path
 from keras import Model, Input
 from keras.callbacks import ModelCheckpoint, History
@@ -15,7 +17,7 @@ from keras.models import load_model
 from keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose
 from keras.layers.merge import concatenate
 from keras.optimizers import Adam
-from tumor import data
+from tumor import seg_data as data
 
 
 class Unet(object):
@@ -90,8 +92,8 @@ class Unet(object):
 
     def train(self, batch_size=1, samples_per_epoch=1000, epochs=1):
         model = self._get_model()
-        # model_checkpoint = ModelCheckpoint(
-        #     self.model_path, monitor='val_loss', save_best_only=True)
+        model_checkpoint = ModelCheckpoint(
+            self.model_path, monitor='val_loss', save_best_only=True)
         history = History()
         model.fit_generator(
             data.generate_arrays_from_file(data.FILENAME, batch_size),
@@ -101,16 +103,16 @@ class Unet(object):
             validation_data=data.generate_arrays_from_file(data.FILENAME_V),
             validation_steps=20,
             shuffle=True,
-            callbacks=[#model_checkpoint,
+            callbacks=[model_checkpoint,
                        history]
         )
-        model.save(self.model_path + '.' + str(history.history['val_loss'][-1]))
-        print('save to '+ 'unet.h5'+'.'+str(history.history['val_loss'][-1]))
+        # model.save(self.model_path+'.'+str(history.history['val_loss'][-1]))
+        # print('save to '+ 'unet.h5'+'.'+str(history.history['val_loss'][-1]))
 
     def continue_train(self, model_path, batch_size=1, samples_per_epoch=1000, epochs=1):
         model = load_model(path.join(self._dir, model_path))
-        # model_checkpoint = ModelCheckpoint(
-        #     self.model_path, monitor='val_loss', save_best_only=True)
+        model_checkpoint = ModelCheckpoint(
+            self.model_path, monitor='val_loss', save_best_only=True)
         history = History()
         model.fit_generator(
             data.generate_arrays_from_file(data.FILENAME, batch_size),
@@ -120,11 +122,11 @@ class Unet(object):
             validation_data=data.generate_arrays_from_file(data.FILENAME_V),
             validation_steps=20,
             shuffle=True,
-            callbacks=[#model_checkpoint,
+            callbacks=[model_checkpoint,
                        history]
         )
-        model.save(self.model_path+'.'+str(history.history['val_loss'][-1]))
-        print('save to '+ 'unet.h5'+'.'+str(history.history['val_loss'][-1]))
+        # model.save(self.model_path+'.'+str(history.history['val_loss'][-1]))
+        # print('save to '+ 'unet.h5'+'.'+str(history.history['val_loss'][-1]))
 
     def _load_model(self):
         return load_model(self.model_path)
@@ -144,5 +146,6 @@ class Unet(object):
 if __name__ == '__main__':
     u = Unet()
     # u.draw_model()
-    # u.train(batch_size=1, samples_per_epoch=1, epochs=1)
-    # u.continue_train('unet.h5.0.6830260127782821', batch_size=1, samples_per_epoch=1, epochs=1)
+    # u.train(batch_size=4, samples_per_epoch=500, epochs=20)
+    # u.continue_train('unet.h5.only_p', batch_size=4, samples_per_epoch=500, epochs=10)
+    print(u.eval())

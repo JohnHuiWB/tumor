@@ -15,8 +15,15 @@ import cv2
 
 
 def test_predict(u):
-    from tumor.data import generate_arrays_from_file, FILENAME_T
-    x, y = generate_arrays_from_file(FILENAME_T).__next__()
+    from tumor.seg_data import generate_arrays_from_file, FILENAME_T
+    g = generate_arrays_from_file(FILENAME_T)
+    x, y = g.__next__()
+    x, y = g.__next__()
+    x, y = g.__next__()
+    x, y = g.__next__()
+
+
+
     r = u.predict(x)
 
     # 二值化
@@ -54,15 +61,20 @@ def test_train(u, batch_size, samples_per_epoch, epochs):
             samples_per_epoch=samples_per_epoch,
             epochs=epochs)
 
+
 def test_continue_train(u, batch_size, samples_per_epoch, epochs):
     u.continue_train(batch_size=batch_size,
             samples_per_epoch=samples_per_epoch,
             epochs=epochs)
 
+def test_eval(u):
+    result = u.eval()
+    print(result)
 
 if __name__ == '__main__':
     u = Unet()
     # test_draw_model(u)
     # test_train(u, batch_size=6, samples_per_epoch=1000, epochs=4)
     test_predict(u)
-    # test_continue_train(u, batch_size=6, samples_per_epoch=1000, epochs=12)
+    # test_continue_train(u, batch_size=6, samples_per_epoch=1000, epochs=8)
+    # test_eval(u)
