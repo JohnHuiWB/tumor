@@ -1,11 +1,23 @@
-from keras.models import load_model
 import cv2
 import numpy as np
+from keras.models import load_model
 
+# 禁止输出tensorflow的log
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+
+# 加载四个模型
+print('————————————————————加载模型中————————————————————')
 model1 =load_model('inceptionv3_outline/model.h5')
+print('进度  1 / 4')
 model3 =load_model('inceptionv3_tumor/model5.h5')
+print('进度  2 / 4')
 model2 =load_model('unet/unet.h5')
-# model4 =load_model('unet2/unet.h5')
+print('进度  3 / 4')
+model4 =load_model('unet2/unet.h5')
+print('进度  4 / 4')
+print('————————————————————加载完成————————————————————')
 
 
 def judge_outline(img):  #3通道
@@ -13,7 +25,7 @@ def judge_outline(img):  #3通道
 	img=(np.array(img, dtype=np.float32))/255.
 	img=np.reshape(img,[1,299,299,3])
 	end=model1.predict(img)
-	print(end)
+	# print(end)
 	if end[0][0]>=0.5:
 		return True
 	else:
@@ -26,7 +38,7 @@ def gen_outline(img): #1通道
 	r *= 255
 	r=r.astype('uint8')
 	r=np.squeeze(r)
-	cv2.imshow('轮廓间隙', r)
+	cv2.imshow('outline', r)
 	return r
 
 def judge_tumor(img_origion,img_unet):
@@ -38,7 +50,7 @@ def judge_tumor(img_origion,img_unet):
 	img_unet=(np.array(img_unet, dtype=np.float32))/255.
 	img_unet=np.reshape(img_unet,[1,299,299,1])
 	end=model3.predict([img_origion,img_unet])
-	print(end)
+	# print(end)
 	if end[0][0]>=0.5:
 		return True
 	else:
@@ -56,27 +68,31 @@ def gen_tumor(img_origion,img_unet):
 	r *= 255
 	r=r.astype('uint8')
 	r=np.squeeze(r)
-	cv2.imshow('肿瘤', r)
+	cv2.imshow('tumor', r)
 	return r
 
 
 def predict(filename):
 	img1=cv2.imread(filename,1)
-	cv2.imshow('原图', img1)
+	cv2.imshow('orign', img1)
 	img2=cv2.imread(filename,0)
 	img3=img1
 	img4=img2
+	print('\n————————————————————输出结果————————————————————')
+	print('是否有膀胱壁：')
 	if judge_outline(img1):
-		print("有轮廓间隙")
+		print("\t有膀胱壁")
 		outline=gen_outline(img2)
 		outline2=outline
+		print('是否有肿瘤：')
 		if judge_tumor(img3,outline):
-			print("有肿瘤")
+			print("\t有肿瘤")
 			gen_tumor(img4,outline2)
 		else:
-			print("无肿瘤")
+			print("\t无肿瘤")
 	else:
-		print("无轮廓间隙")
+		print("\t无膀胱壁")
+	print('——————————————————————————————————————————————')
 	cv2.waitKey(0)
 	cv2.destroyAllWindows()
 
